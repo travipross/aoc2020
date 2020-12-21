@@ -12,16 +12,19 @@ def parse_data(raw_data):
 
 def summarize_deltas(voltage_list): 
     d = defaultdict(int)
+    ct = defaultdict(int, {0: 1})
     for a, b in zip(voltage_list[1:], voltage_list):
         d[a-b] += 1
-    return d 
+        ct[a] = ct[a-3] + ct[a-2] + ct[a-1]
+    return d, ct
 
 def part_a(parsed_data):
-    deltas = summarize_deltas(parsed_data)
+    deltas, _ = summarize_deltas(parsed_data)
     return deltas[1] * deltas[3]
 
 def part_b(parsed_data):
-    pass
+    _, ct = summarize_deltas(parsed_data)
+    return ct[parsed_data[-1]]
 
 if __name__ == "__main__":
     raw_data = read_data('input.txt')
