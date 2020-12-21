@@ -1,6 +1,6 @@
 
 def read_data(filename):
-    with open('input.txt') as f:
+    with open(filename) as f:
         raw_data = f.read()
     return raw_data
 
