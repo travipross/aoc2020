@@ -1,5 +1,6 @@
 import re
 import json
+import numpy as np
 
 def read_data(filename):
     with open(filename) as f:
@@ -56,17 +57,69 @@ def part_a(parsed_data):
 
 def part_b(parsed_data):
     valid_tickets = [ t for t in parsed_data['nearby_tickets'] if not ticket_fails_all_rules(t, parsed_data['constraints'])]
+        
     potential_fields = {
         n: list(parsed_data['constraints'].keys())
         for n in range(len(parsed_data['constraints']))
     }
+
+    determined_fields = reduce_potential_fields(valid_tickets, potential_fields, parsed_data['constraints'])
+
+    vals = [ get_field_by_name(parsed_data['your_ticket'], name, determined_fields) for name in parsed_data['constraints'] if name.startswith('departure') ]
+    return np.prod(vals)
+
+def get_field_by_name(ticket, fieldname, determined_fields):
+    for idx, field in determined_fields.items():
+        if field == fieldname:
+            return ticket[int(idx)]
+    return None
+
+
+def reduce_potential_fields(tickets, potential_fields, constraints):
+    potential_fields = potential_fields.copy()
+
+    # first, looping over each index in the ticket pattern
+    for idx in potential_fields:
+        # looping over each valid ticket
+        for t in tickets:
+            # if a constraint isn't satisfied, then this index can't be this field
+            for field, rule in constraints.items():
+                if not satisfies_rule(rule, t[int(idx)]):
+                    potential_fields[idx].remove(field)
+                    break
+
+    # next, look for indexes having only one potential field, "locking it in"
+    determined_fields = {}
+    max_iter = 50 
+    iter = 0
+    # loop as long as all fields have yet to be determined
+    while len(determined_fields) != len(potential_fields) and iter <= max_iter:
+        determined_field = None
+        iter += 1
+        # for each index, check if it has length = 1. If so, it's determined. Break after finding one
+        for idx in potential_fields:
+            if len(potential_fields[idx]) == 1:
+                determined_field = potential_fields[idx][0]
+                determined_fields[idx] = determined_field
+                break
+
+        # if any fields were found to be determined, remove them from potential fields lists
+        if determined_field is not None: 
+            for idx in potential_fields:
+                if determined_field in potential_fields[idx]:
+                    potential_fields[idx].remove(determined_field)
+        else:
+            print(f"NO DETERMINED FIELD THIS ITER ({iter})")
     
+
+    return determined_fields
+
 
 if __name__ == "__main__":
     raw_data = read_data('input.txt')
     parsed_data = parse_data(raw_data)
 
-    sample_data = parse_data(read_data('sample.txt'))
+    sample_data = parse_data(read_data('sample1.txt'))
 
     a = part_a(parsed_data)
     print(f"Answer A: {a}")
